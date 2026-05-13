@@ -230,7 +230,44 @@ label {
 .sidebar nav {
   display: grid;
   gap: 12px;
-  margin-top: 42px;
+  margin-top: 24px;
+}
+
+.profile-card {
+  margin-top: 26px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: #0d1017;
+  padding: 16px;
+  display: grid;
+  gap: 5px;
+}
+
+.profile-card span {
+  width: 44px;
+  height: 44px;
+  border-radius: 15px;
+  display: grid;
+  place-items: center;
+  background: var(--green);
+  color: #06100b;
+  font-weight: 900;
+  margin-bottom: 6px;
+}
+
+.profile-card strong,
+.profile-card em {
+  overflow-wrap: anywhere;
+}
+
+.profile-card small {
+  color: var(--muted);
+}
+
+.profile-card em {
+  color: var(--green);
+  font-style: normal;
+  font-size: 13px;
 }
 
 .nav-btn {

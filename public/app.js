@@ -244,6 +244,12 @@ function renderSidebar(activeView) {
         <div class="ghost-icon">G</div>
         <strong>GHOST</strong>
       </div>
+      <div class="profile-card">
+        <span>${escapeHtml(state.user.username.charAt(0).toUpperCase())}</span>
+        <strong>${escapeHtml(state.user.username)}</strong>
+        <small>${state.user.isAdmin ? 'Administrador' : 'Usuario'}</small>
+        <em>${escapeHtml(state.user.phoneE164 || 'Sin WhatsApp asignado')}</em>
+      </div>
       <nav>
         <button class="nav-btn ${activeView === 'panel' ? 'active' : ''}" data-view="panel">Panel</button>
         <button class="nav-btn ${activeView === 'conversations' ? 'active' : ''}" data-view="conversations">Conversaciones</button>
