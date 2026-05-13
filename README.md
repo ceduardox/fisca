@@ -28,5 +28,6 @@ Conecta el repo y crea una base PostgreSQL. Variables esperadas:
 - `GHOST_ADMIN_PASSWORD`
 - `PUBLIC_BASE_URL`
 - `DEFAULT_REDIRECT_URL` opcional; por defecto usa `https://news.google.com/`
+- `SOCIAL_IMAGE_URL` opcional; por defecto usa `https://thefuckingclub.io/imagenaqui`
 
 El primer arranque crea el usuario admin si no existe.

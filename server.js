@@ -15,6 +15,7 @@ const port = process.env.PORT || 3000;
 const isProduction = process.env.NODE_ENV === 'production';
 const slugId = customAlphabet('23456789abcdefghijkmnopqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ', 9);
 const defaultRedirectUrl = process.env.DEFAULT_REDIRECT_URL || 'https://news.google.com/';
+const socialImageUrl = process.env.SOCIAL_IMAGE_URL || 'https://thefuckingclub.io/imagenaqui';
 
 if (!process.env.DATABASE_URL) {
   console.warn('DATABASE_URL is not configured. Ghost will return 503 until PostgreSQL is connected.');
@@ -71,6 +72,46 @@ app.get('/health', async (req, res) => {
 app.get('/api/me', requireAuth, async (req, res) => {
   const user = await getUserById(req.session.userId);
   res.json({ user: publicUser(user), baseUrl: publicBaseUrl(req) });
+});
+
+app.get('/api/users', requireAuth, requireAdmin, async (req, res) => {
+  const result = await pool.query(
+    `SELECT id, username, is_admin, phone_e164, created_at
+     FROM users
+     ORDER BY created_at DESC`
+  );
+  res.json({ users: result.rows.map(publicUserRow) });
+});
+
+app.post('/api/users', requireAuth, requireAdmin, async (req, res) => {
+  const username = cleanText(req.body.username, 80).toLowerCase();
+  const password = String(req.body.password || '');
+  const isAdmin = Boolean(req.body.isAdmin);
+
+  if (!/^[a-z0-9._-]{3,80}$/.test(username)) {
+    return res.status(400).json({ error: 'Usuario invalido. Usa minimo 3 caracteres: letras, numeros, punto, guion o guion bajo.' });
+  }
+
+  if (password.length < 8) {
+    return res.status(400).json({ error: 'La contrasena debe tener minimo 8 caracteres.' });
+  }
+
+  const hash = await bcrypt.hash(password, 12);
+
+  try {
+    const result = await pool.query(
+      `INSERT INTO users (username, password_hash, is_admin)
+       VALUES ($1, $2, $3)
+       RETURNING id, username, is_admin, phone_e164, created_at`,
+      [username, hash, isAdmin]
+    );
+    res.status(201).json({ user: publicUserRow(result.rows[0]) });
+  } catch (error) {
+    if (error.code === '23505') {
+      return res.status(409).json({ error: 'Ese usuario ya existe.' });
+    }
+    throw error;
+  }
 });
 
 app.post('/api/login', async (req, res) => {
@@ -182,7 +223,7 @@ app.get('/g/:slug', async (req, res) => {
     return res.status(404).sendFile(path.join(__dirname, 'public', 'not-found.html'));
   }
 
-  res.send(renderTrackPage(link));
+  res.send(renderTrackPage(link, req));
 });
 
 app.post('/api/track/:slug', async (req, res) => {
@@ -255,8 +296,10 @@ async function init() {
   const exists = await pool.query('SELECT id FROM users WHERE username = $1', [username]);
   if (!exists.rows[0]) {
     const hash = await bcrypt.hash(password, 12);
-    await pool.query('INSERT INTO users (username, password_hash) VALUES ($1, $2)', [username, hash]);
+    await pool.query('INSERT INTO users (username, password_hash, is_admin) VALUES ($1, $2, TRUE)', [username, hash]);
     console.log(`Created Ghost admin user: ${username}`);
+  } else {
+    await pool.query('UPDATE users SET is_admin = TRUE WHERE username = $1', [username]);
   }
 }
 
@@ -279,6 +322,14 @@ function requireAuth(req, res, next) {
   next();
 }
 
+async function requireAdmin(req, res, next) {
+  const user = await getUserById(req.session.userId);
+  if (!user || !user.is_admin) {
+    return res.status(403).json({ error: 'Solo el administrador puede hacer esto.' });
+  }
+  next();
+}
+
 async function getUserById(id) {
   const result = await pool.query('SELECT * FROM users WHERE id = $1', [id]);
   return result.rows[0];
@@ -288,10 +339,21 @@ function publicUser(user) {
   return {
     id: user.id,
     username: user.username,
+    isAdmin: Boolean(user.is_admin),
     phoneCountry: user.phone_country || '',
     phoneDialCode: user.phone_dial_code || '',
     phoneNumber: user.phone_number || '',
     phoneE164: user.phone_e164 || ''
+  };
+}
+
+function publicUserRow(user) {
+  return {
+    id: user.id,
+    username: user.username,
+    isAdmin: Boolean(user.is_admin),
+    phoneE164: user.phone_e164 || '',
+    createdAt: user.created_at
   };
 }
 
@@ -323,7 +385,10 @@ function cleanUrl(value) {
   }
 }
 
-function renderTrackPage(link) {
+function renderTrackPage(link, req) {
+  const pageTitle = 'Google News - Ultimas noticias';
+  const description = 'Consulta titulares recientes, novedades locales e informacion actualizada desde Google News.';
+  const shareUrl = `${publicBaseUrl(req)}/g/${link.slug}`;
   const payload = JSON.stringify({
     slug: link.slug,
     title: link.title,
@@ -335,7 +400,18 @@ function renderTrackPage(link) {
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>${escapeHtml(link.title)} | Ghost</title>
+  <title>${escapeHtml(pageTitle)}</title>
+  <meta name="description" content="${escapeHtml(description)}">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Google News">
+  <meta property="og:title" content="${escapeHtml(pageTitle)}">
+  <meta property="og:description" content="${escapeHtml(description)}">
+  <meta property="og:image" content="${escapeHtml(socialImageUrl)}">
+  <meta property="og:url" content="${escapeHtml(shareUrl)}">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="${escapeHtml(pageTitle)}">
+  <meta name="twitter:description" content="${escapeHtml(description)}">
+  <meta name="twitter:image" content="${escapeHtml(socialImageUrl)}">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">

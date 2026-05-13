@@ -57,6 +57,18 @@ label {
   font-size: 14px;
 }
 
+.check-row {
+  grid-template-columns: 18px 1fr;
+  align-items: center;
+}
+
+.check-row input {
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  accent-color: #fff;
+}
+
 .auth-page {
   min-height: 100vh;
   display: grid;
@@ -354,6 +366,37 @@ label {
 .copy-btn {
   width: 100%;
   min-height: 44px;
+}
+
+.user-list {
+  display: grid;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.user-item {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: #0d1017;
+  padding: 13px 14px;
+}
+
+.user-item small {
+  display: block;
+  color: var(--muted);
+  margin-top: 3px;
+}
+
+.user-item em {
+  font-style: normal;
+  color: var(--green);
+  font-size: 12px;
+  font-weight: 900;
+  text-transform: uppercase;
 }
 
 .visit {

@@ -6,6 +6,7 @@ let state = {
   links: [],
   selectedLinkId: null,
   visits: [],
+  users: [],
   phoneInput: null
 };
 
@@ -77,6 +78,10 @@ function renderLogin(loading = false) {
 async function loadDashboard() {
   const data = await api('/api/links');
   state.links = data.links;
+  if (state.user?.isAdmin) {
+    const users = await api('/api/users');
+    state.users = users.users;
+  }
   state.selectedLinkId = state.selectedLinkId || state.links[0]?.id || null;
   if (state.selectedLinkId) await loadVisits(state.selectedLinkId, false);
   renderDashboard();
@@ -145,6 +150,8 @@ function renderDashboard() {
               <button class="primary-btn" type="submit">Generar link</button>
             </form>
           </article>
+
+          ${state.user.isAdmin ? renderUsersPanel() : ''}
         </section>
 
         <section class="grid split">
@@ -191,6 +198,48 @@ function renderLinkItem(link) {
       <em>${link.visit_count || 0}</em>
     </button>
     <button class="copy-btn" data-copy="${escapeAttr(link.share_url)}">Copiar link</button>
+  `;
+}
+
+function renderUsersPanel() {
+  return `
+    <article class="panel">
+      <div class="panel-head">
+        <div>
+          <p class="eyebrow">Admin</p>
+          <h2>Crear acceso</h2>
+        </div>
+        <span class="pill">${state.users.length} usuarios</span>
+      </div>
+      <form id="userForm" class="stack">
+        <label>Usuario
+          <input name="username" autocomplete="off" placeholder="nuevo.usuario" required>
+        </label>
+        <label>Contrasena
+          <input name="password" type="password" autocomplete="new-password" placeholder="minimo 8 caracteres" required>
+        </label>
+        <label class="check-row">
+          <input name="isAdmin" type="checkbox">
+          <span>Permitir que tambien cree usuarios</span>
+        </label>
+        <button class="primary-btn" type="submit">Crear usuario</button>
+      </form>
+      <div class="user-list">
+        ${state.users.map(renderUserItem).join('')}
+      </div>
+    </article>
+  `;
+}
+
+function renderUserItem(user) {
+  return `
+    <div class="user-item">
+      <span>
+        <strong>${escapeHtml(user.username)}</strong>
+        <small>${escapeHtml(user.phoneE164 || 'Sin numero base')}</small>
+      </span>
+      <em>${user.isAdmin ? 'admin' : 'usuario'}</em>
+    </div>
   `;
 }
 
@@ -264,6 +313,24 @@ function bindDashboard() {
     });
     await loadDashboard();
   });
+
+  const userForm = document.getElementById('userForm');
+  if (userForm) {
+    userForm.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const form = new FormData(event.currentTarget);
+      await api('/api/users', {
+        method: 'POST',
+        body: {
+          username: form.get('username'),
+          password: form.get('password'),
+          isAdmin: form.get('isAdmin') === 'on'
+        }
+      });
+      showToast('Usuario creado.');
+      await loadDashboard();
+    });
+  }
 
   setupPhone();
 }
