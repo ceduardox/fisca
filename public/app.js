@@ -283,14 +283,7 @@ function renderConversationRows() {
 }
 
 function renderConversationPreview(type) {
-  const previews = {
-    call: 'Llamada',
-    missed: 'Llamada perdida',
-    message: 'Buenos dias, como le va? somos un...',
-    image: 'tenemos este en 260 bs.',
-    photo: 'Foto'
-  };
-  return `<span class="wa-loader"></span>${escapeHtml(previews[type] || 'Cargando mensaje')}`;
+  return `<span class="wa-loader"></span><span class="wa-message-skeleton ${type || 'message'}"></span>`;
 }
 
 function renderLinkItem(link) {

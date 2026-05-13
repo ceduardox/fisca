@@ -706,6 +706,25 @@ label {
   animation: spin 0.8s linear infinite;
 }
 
+.wa-message-skeleton {
+  width: min(100%, 220px);
+  height: 16px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgba(143, 152, 166, 0.18), rgba(244, 247, 251, 0.28), rgba(143, 152, 166, 0.18));
+  background-size: 240% 100%;
+  animation: loadingWave 1.15s ease-in-out infinite;
+}
+
+.wa-message-skeleton.call,
+.wa-message-skeleton.missed,
+.wa-message-skeleton.photo {
+  width: 112px;
+}
+
+.wa-message-skeleton.image {
+  width: 180px;
+}
+
 .wa-blur-text {
   display: inline-block;
   color: transparent;
@@ -749,6 +768,15 @@ label {
 @keyframes shimmer {
   to {
     transform: translateX(100%);
+  }
+}
+
+@keyframes loadingWave {
+  0% {
+    background-position: 120% 0;
+  }
+  100% {
+    background-position: -120% 0;
   }
 }
 
