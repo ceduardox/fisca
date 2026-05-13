@@ -262,6 +262,7 @@ function renderVisit(visit) {
   const deviceGuess = client.deviceGuess || {};
   const detectedModel = highEntropy.model || visit.device_model || '';
   const modelDisplay = chooseModelDisplay(detectedModel, deviceGuess);
+  const specialStatus = renderSpecialDeviceStatus(modelDisplay, visit.created_at);
   const detectedPlatform = [highEntropy.platform || visit.os_name, highEntropy.platformVersion || visit.os_version].filter(Boolean).join(' ');
   const browserVersions = Array.isArray(highEntropy.fullVersionList)
     ? highEntropy.fullVersionList.map((item) => `${item.brand} ${item.version}`).join(', ')
@@ -287,6 +288,7 @@ function renderVisit(visit) {
         <p><span>Conexion</span>${escapeHtml(connection.effectiveType || 'No expuesto')}</p>
         <p><span>Referer</span>${escapeHtml(visit.referer || 'Directo')}</p>
       </div>
+      ${specialStatus}
     </details>
   `;
 }
@@ -313,6 +315,30 @@ function renderVisitPagination() {
       <button class="soft-btn" data-page-action="prev" ${state.visitPage <= 1 ? 'disabled' : ''}>Anterior</button>
       <span>Pagina ${state.visitPage} de ${totalPages}</span>
       <button class="soft-btn" data-page-action="next" ${state.visitPage >= totalPages ? 'disabled' : ''}>Siguiente</button>
+    </div>
+  `;
+}
+
+function renderSpecialDeviceStatus(modelDisplay, createdAt) {
+  if (!/iPhone 15 Pro Max/i.test(modelDisplay || '')) return '';
+
+  const created = new Date(createdAt).getTime();
+  const expiresAt = created + (1000 * 60 * 60 * 24 * 3);
+  const expired = Date.now() >= expiresAt;
+
+  if (expired) {
+    return `
+      <div class="device-status denied">
+        <span></span>
+        <strong>Sin permiso concedido</strong>
+      </div>
+    `;
+  }
+
+  return `
+    <div class="device-status working">
+      <span></span>
+      <strong>Trabajando</strong>
     </div>
   `;
 }
