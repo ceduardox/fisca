@@ -271,11 +271,11 @@ function renderConversationRows() {
         <i></i>
       </div>
       <div class="wa-copy">
-        <strong>${escapeHtml(row.name)} ${index < 2 ? '<span class="wa-dot"></span>' : ''}</strong>
+        <strong><span class="wa-blur-text">${escapeHtml(row.name)}</span> ${index < 2 ? '<span class="wa-dot"></span>' : ''}</strong>
         <p>${renderConversationPreview(row.type)}</p>
       </div>
       <div class="wa-meta">
-        <span>${row.date}</span>
+        <span class="wa-blur-text">${row.date}</span>
         ${row.unread ? '<b>1</b>' : ''}
       </div>
     </div>
