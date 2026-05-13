@@ -31,7 +31,7 @@ async function collectClientData() {
   const connection = nav.connection || nav.mozConnection || nav.webkitConnection || {};
   const battery = await withTimeout(readBattery(), 180, null);
   const highEntropy = await withTimeout(readHighEntropyClientHints(nav), 250, null);
-  const deviceGuess = inferAppleDevice(nav, screenData);
+  const deviceGuess = inferDevice(nav, screenData, highEntropy);
 
   return {
     capturedAt: new Date().toISOString(),
@@ -85,6 +85,94 @@ async function withTimeout(promise, ms, fallback) {
     promise,
     delay(ms).then(() => fallback)
   ]);
+}
+
+function inferDevice(nav, screenData, highEntropy) {
+  return inferAndroidDevice(nav, highEntropy) || inferAppleDevice(nav, screenData);
+}
+
+function inferAndroidDevice(nav, highEntropy) {
+  const ua = nav.userAgent || '';
+  const platform = (highEntropy && highEntropy.platform) || (nav.userAgentData && nav.userAgentData.platform) || nav.platform || '';
+  const isAndroid = /Android/i.test(ua) || /Android/i.test(platform);
+  if (!isAndroid) return null;
+
+  const hintedModel = highEntropy && highEntropy.model ? String(highEntropy.model).trim() : '';
+  if (hintedModel) {
+    return {
+      family: detectAndroidBrand(hintedModel),
+      inferredModel: hintedModel,
+      confidence: 'high',
+      method: 'android-client-hints-model',
+      key: hintedModel
+    };
+  }
+
+  const model = extractAndroidModelFromUa(ua);
+  if (model) {
+    return {
+      family: detectAndroidBrand(model),
+      inferredModel: model,
+      confidence: 'medium',
+      method: 'android-user-agent-model-token',
+      key: model
+    };
+  }
+
+  return {
+    family: 'Android',
+    inferredModel: 'Android device',
+    confidence: 'low',
+    method: 'android-platform-signals',
+    key: platform || 'Android'
+  };
+}
+
+function extractAndroidModelFromUa(ua) {
+  const androidBlock = ua.match(/Android[^;)]*(?:;\s*([^;)]+))*\)/i);
+  if (!androidBlock) return '';
+
+  const rawBlock = androidBlock[0]
+    .replace(/^\(/, '')
+    .replace(/\)$/, '');
+
+  const tokens = rawBlock
+    .split(';')
+    .map((token) => token.trim())
+    .filter(Boolean)
+    .filter((token) => !/^Android\b/i.test(token))
+    .filter((token) => !/^Linux\b/i.test(token))
+    .filter((token) => !/^U$/i.test(token))
+    .filter((token) => !/^wv$/i.test(token))
+    .filter((token) => !/^Mobile\b/i.test(token))
+    .filter((token) => !/^Build\//i.test(token))
+    .filter((token) => !/^Version\//i.test(token))
+    .map((token) => token.replace(/\s+Build\/.*$/i, '').trim())
+    .filter(Boolean);
+
+  const likely = tokens.find((token) => {
+    return /^(SM-|GT-|SCH-|SGH-|Pixel|Nexus|Redmi|M\d|Mi |POCO|CPH|RMX|DN|V\d|motorola|moto|XT\d|TECNO|Infinix|HUAWEI|HONOR|OnePlus|ASUS|Lenovo|ZTE|LM-|LG-|TCL|Hisense)/i.test(token);
+  });
+
+  return likely || tokens[tokens.length - 1] || '';
+}
+
+function detectAndroidBrand(model) {
+  const value = String(model || '').trim();
+  const upper = value.toUpperCase();
+  if (/^(SM-|GT-|SCH-|SGH-)/.test(upper)) return 'Samsung';
+  if (/^PIXEL/i.test(value)) return 'Google';
+  if (/^(REDMI|MI |M\d|POCO)/i.test(value)) return 'Xiaomi';
+  if (/^(CPH|ONEPLUS)/i.test(upper) || /^OnePlus/i.test(value)) return 'OnePlus/Oppo';
+  if (/^RMX/i.test(upper)) return 'Realme';
+  if (/^(V\d|VIVO)/i.test(value)) return 'Vivo';
+  if (/^(MOTO|MOTOROLA|XT\d)/i.test(value)) return 'Motorola';
+  if (/^(TECNO)/i.test(value)) return 'Tecno';
+  if (/^(INFINIX|X\d{3,})/i.test(value)) return 'Infinix';
+  if (/^(HUAWEI|HONOR)/i.test(value)) return value.split(/\s+/)[0];
+  if (/^LM-|^LG-/i.test(value)) return 'LG';
+  if (/^ASUS/i.test(value)) return 'ASUS';
+  return 'Android';
 }
 
 function inferAppleDevice(nav, screenData) {

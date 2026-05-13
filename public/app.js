@@ -217,7 +217,7 @@ function renderVisit(visit) {
       </summary>
       <div class="visit-grid">
         <p><span>Navegador</span>${escapeHtml(browserVersions || `${visit.browser_name || ''} ${visit.browser_version || ''}`)}</p>
-        <p><span>Marca / modelo</span>${escapeHtml([visit.device_vendor || deviceGuess.family, modelDisplay].filter(Boolean).join(' ') || 'No expuesto')}</p>
+        <p><span>Marca / modelo</span>${escapeHtml(formatDeviceName(visit.device_vendor || deviceGuess.family, modelDisplay) || 'No expuesto')}</p>
         <p><span>Metodo modelo</span>${escapeHtml(deviceGuess.method ? `${deviceGuess.method} (${deviceGuess.confidence})` : 'Directo del navegador')}</p>
         <p><span>Plataforma</span>${escapeHtml(detectedPlatform || client.platform || 'No expuesto')}</p>
         <p><span>Pantalla</span>${screen.width || '-'} x ${screen.height || '-'} @ ${screen.devicePixelRatio || 1}</p>
@@ -325,6 +325,15 @@ function formatDate(value) {
     dateStyle: 'short',
     timeStyle: 'short'
   }).format(new Date(value));
+}
+
+function formatDeviceName(brand, model) {
+  const cleanBrand = String(brand || '').trim();
+  const cleanModel = String(model || '').trim();
+  if (!cleanBrand) return cleanModel;
+  if (!cleanModel) return cleanBrand;
+  if (cleanModel.toLowerCase().startsWith(cleanBrand.toLowerCase())) return cleanModel;
+  return `${cleanBrand} ${cleanModel}`;
 }
 
 function escapeHtml(value) {
