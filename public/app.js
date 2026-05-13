@@ -16,7 +16,7 @@ let state = {
 init();
 
 async function init() {
-  renderLogin(true);
+  renderBoot();
   try {
     const session = await api('/api/me');
     state.user = session.user;
@@ -25,6 +25,16 @@ async function init() {
   } catch {
     renderLogin();
   }
+}
+
+function renderBoot() {
+  app.innerHTML = `
+    <main class="boot-page">
+      <div class="ghost-icon">G</div>
+      <strong>GHOST</strong>
+      <span></span>
+    </main>
+  `;
 }
 
 function renderLogin(loading = false) {
