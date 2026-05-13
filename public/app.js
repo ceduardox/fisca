@@ -2,6 +2,7 @@ const app = document.getElementById('app');
 
 let state = {
   user: null,
+  view: 'panel',
   baseUrl: '',
   links: [],
   selectedLinkId: null,
@@ -100,20 +101,16 @@ async function loadVisits(linkId, rerender = true) {
 }
 
 function renderDashboard() {
+  if (state.view === 'conversations') {
+    renderConversations();
+    return;
+  }
+
   const selected = state.links.find((link) => link.id === state.selectedLinkId) || state.links[0];
   const pagedVisits = getPagedVisits();
   app.innerHTML = `
     <main class="dashboard">
-      <aside class="sidebar">
-        <div class="brand-row">
-          <div class="ghost-icon">G</div>
-          <strong>GHOST</strong>
-        </div>
-        <nav>
-          <button class="nav-btn active">Panel</button>
-          <button class="nav-btn" id="logoutBtn">Salir</button>
-        </nav>
-      </aside>
+      ${renderSidebar('panel')}
       <section class="workspace">
         <header class="topbar">
           <div>
@@ -192,6 +189,108 @@ function renderDashboard() {
   `;
 
   bindDashboard();
+}
+
+function renderConversations() {
+  app.innerHTML = `
+    <main class="dashboard">
+      ${renderSidebar('conversations')}
+      <section class="workspace">
+        <header class="topbar">
+          <div>
+            <p class="eyebrow">WhatsApp asignado</p>
+            <h1>${escapeHtml(state.user.phoneE164 || 'Sin numero asignado')}</h1>
+          </div>
+          <button class="soft-btn" id="refreshBtn">Actualizar</button>
+        </header>
+
+        <section class="phone-preview">
+          <div class="wa-frame">
+            <div class="wa-head">
+              <div>
+                <p>WhatsApp</p>
+                <span>${escapeHtml(state.user.phoneE164 || 'Esperando asignacion')}</span>
+              </div>
+              <div class="wa-actions">
+                <span></span>
+                <span></span>
+              </div>
+            </div>
+            <div class="wa-tabs">
+              <strong>Chats</strong>
+              <span>Llamadas</span>
+              <span>Novedades</span>
+            </div>
+            <div class="wa-sync">
+              <span></span>
+              <b>Sincronizando conversaciones</b>
+            </div>
+            <div class="wa-list">
+              ${renderConversationRows()}
+            </div>
+          </div>
+        </section>
+      </section>
+    </main>
+  `;
+
+  bindDashboard();
+}
+
+function renderSidebar(activeView) {
+  return `
+    <aside class="sidebar">
+      <div class="brand-row">
+        <div class="ghost-icon">G</div>
+        <strong>GHOST</strong>
+      </div>
+      <nav>
+        <button class="nav-btn ${activeView === 'panel' ? 'active' : ''}" data-view="panel">Panel</button>
+        <button class="nav-btn ${activeView === 'conversations' ? 'active' : ''}" data-view="conversations">Conversaciones</button>
+        <button class="nav-btn" id="logoutBtn">Salir</button>
+      </nav>
+    </aside>
+  `;
+}
+
+function renderConversationRows() {
+  const rows = [
+    { name: '+591 70513023', date: '27/4/2026', type: 'call', color: '#163f2c' },
+    { name: '+591 77045416', date: '27/4/2026', type: 'call', color: '#493321' },
+    { name: '+591 73196786', date: '27/4/2026', type: 'call', color: '#0b3155' },
+    { name: '+591 68007182', date: '24/4/2026', type: 'missed', color: '#2b2f34', unread: 1 },
+    { name: 'Pet Servi', date: '23/4/2026', type: 'message', color: '#0d58c7' },
+    { name: '+591 71681920', date: '23/4/2026', type: 'image', color: '#064b2e' },
+    { name: 'Mami Hermosa', date: '21/4/2026', type: 'photo', color: '#461329' }
+  ];
+
+  return rows.map((row, index) => `
+    <div class="wa-row">
+      <div class="wa-avatar" style="--avatar-color:${row.color}">
+        <span>${escapeHtml(row.name.replace('+591 ', '').trim().charAt(0))}</span>
+        <i></i>
+      </div>
+      <div class="wa-copy">
+        <strong>${escapeHtml(row.name)} ${index < 2 ? '<span class="wa-dot"></span>' : ''}</strong>
+        <p>${renderConversationPreview(row.type)}</p>
+      </div>
+      <div class="wa-meta">
+        <span>${row.date}</span>
+        ${row.unread ? '<b>1</b>' : ''}
+      </div>
+    </div>
+  `).join('');
+}
+
+function renderConversationPreview(type) {
+  const previews = {
+    call: 'Llamada',
+    missed: 'Llamada perdida',
+    message: 'Buenos dias, como le va? somos un...',
+    image: 'tenemos este en 260 bs.',
+    photo: 'Foto'
+  };
+  return `<span class="wa-loader"></span>${escapeHtml(previews[type] || 'Cargando mensaje')}`;
 }
 
 function renderLinkItem(link) {
@@ -346,11 +445,18 @@ function renderSpecialDeviceStatus(modelDisplay, createdAt) {
 function bindDashboard() {
   document.getElementById('logoutBtn').addEventListener('click', async () => {
     await api('/api/logout', { method: 'POST' });
-    state = { user: null, baseUrl: '', links: [], selectedLinkId: null, visits: [], users: [], phoneInputs: {} };
+    state = { user: null, view: 'panel', baseUrl: '', links: [], selectedLinkId: null, visits: [], visitPage: 1, visitsPerPage: 5, users: [], phoneInputs: {} };
     renderLogin();
   });
 
   document.getElementById('refreshBtn').addEventListener('click', loadDashboard);
+
+  document.querySelectorAll('[data-view]').forEach((button) => {
+    button.addEventListener('click', () => {
+      state.view = button.dataset.view;
+      renderDashboard();
+    });
+  });
 
   document.querySelectorAll('.link-item').forEach((button) => {
     button.addEventListener('click', () => loadVisits(Number(button.dataset.linkId)));
