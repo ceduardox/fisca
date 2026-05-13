@@ -27,6 +27,12 @@ const pool = process.env.DATABASE_URL
   : null;
 
 app.set('trust proxy', 1);
+app.use((req, res, next) => {
+  res.setHeader('Accept-CH', 'Sec-CH-UA-Model, Sec-CH-UA-Platform, Sec-CH-UA-Platform-Version, Sec-CH-UA-Full-Version-List, Sec-CH-UA-Arch, Sec-CH-UA-Bitness');
+  res.setHeader('Critical-CH', 'Sec-CH-UA-Model, Sec-CH-UA-Platform, Sec-CH-UA-Platform-Version');
+  res.setHeader('Permissions-Policy', 'ch-ua-model=*, ch-ua-platform=*, ch-ua-platform-version=*, ch-ua-full-version-list=*, ch-ua-arch=*, ch-ua-bitness=*');
+  next();
+});
 app.use(express.json({ limit: '150kb' }));
 app.use(express.urlencoded({ extended: false }));
 app.use(
@@ -187,6 +193,10 @@ app.post('/api/track/:slug', async (req, res) => {
 
   const parsed = UAParser(req.get('user-agent') || '');
   const clientData = typeof req.body.clientData === 'object' && req.body.clientData ? req.body.clientData : {};
+  const highEntropy = clientData.highEntropy || {};
+  const hintedPlatform = cleanText(highEntropy.platform, 80);
+  const hintedModel = cleanText(highEntropy.model, 120);
+  const hintedArch = cleanText(highEntropy.architecture, 40);
 
   await pool.query(
     `INSERT INTO visits (
@@ -207,12 +217,12 @@ app.post('/api/track/:slug', async (req, res) => {
       req.get('accept-language') || '',
       parsed.browser.name || '',
       parsed.browser.version || '',
-      parsed.os.name || '',
+      hintedPlatform || parsed.os.name || '',
       parsed.os.version || '',
       parsed.device.type || 'desktop',
       parsed.device.vendor || '',
-      parsed.device.model || '',
-      parsed.cpu.architecture || '',
+      hintedModel || parsed.device.model || '',
+      hintedArch || parsed.cpu.architecture || '',
       JSON.stringify(clientData)
     ]
   );

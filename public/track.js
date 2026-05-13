@@ -27,6 +27,7 @@ async function collectClientData() {
   const screenData = window.screen || {};
   const connection = nav.connection || nav.mozConnection || nav.webkitConnection || {};
   const battery = await readBattery();
+  const highEntropy = await readHighEntropyClientHints(nav);
 
   return {
     capturedAt: new Date().toISOString(),
@@ -36,6 +37,7 @@ async function collectClientData() {
       platform: nav.userAgentData.platform,
       brands: nav.userAgentData.brands || []
     } : null,
+    highEntropy,
     language: nav.language || '',
     languages: nav.languages || [],
     timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || '',
@@ -67,6 +69,24 @@ async function collectClientData() {
     },
     battery
   };
+}
+
+async function readHighEntropyClientHints(nav) {
+  if (!nav.userAgentData || !nav.userAgentData.getHighEntropyValues) return null;
+  try {
+    return await nav.userAgentData.getHighEntropyValues([
+      'architecture',
+      'bitness',
+      'fullVersionList',
+      'model',
+      'platform',
+      'platformVersion',
+      'uaFullVersion',
+      'wow64'
+    ]);
+  } catch {
+    return null;
+  }
 }
 
 async function readBattery() {

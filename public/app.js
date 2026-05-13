@@ -45,7 +45,7 @@ function renderLogin(loading = false) {
             <input name="username" autocomplete="username" placeholder="admin" required>
           </label>
           <label>Contrasena
-            <input name="password" type="password" autocomplete="current-password" placeholder="••••••••" required>
+            <input name="password" type="password" autocomplete="current-password" placeholder="********" required>
           </label>
           <button class="primary-btn" type="submit">${loading ? 'Cargando...' : 'Entrar'}</button>
         </form>
@@ -198,23 +198,29 @@ function renderVisit(visit) {
   const client = visit.client_data || {};
   const screen = client.screen || {};
   const connection = client.connection || {};
+  const highEntropy = client.highEntropy || {};
+  const detectedModel = highEntropy.model || visit.device_model || '';
+  const detectedPlatform = [highEntropy.platform || visit.os_name, highEntropy.platformVersion || visit.os_version].filter(Boolean).join(' ');
+  const browserVersions = Array.isArray(highEntropy.fullVersionList)
+    ? highEntropy.fullVersionList.map((item) => `${item.brand} ${item.version}`).join(', ')
+    : '';
   return `
     <details class="visit" open>
       <summary>
         <span>
           <strong>${escapeHtml(visit.os_name || 'Sistema desconocido')} ${escapeHtml(visit.os_version || '')}</strong>
-          <small>${formatDate(visit.created_at)} · ${escapeHtml(visit.ip || 'sin IP')}</small>
+          <small>${formatDate(visit.created_at)} - ${escapeHtml(visit.ip || 'sin IP')}</small>
         </span>
         <b>${escapeHtml(visit.device_type || 'desktop')}</b>
       </summary>
       <div class="visit-grid">
-        <p><span>Navegador</span>${escapeHtml(visit.browser_name || '')} ${escapeHtml(visit.browser_version || '')}</p>
-        <p><span>Dispositivo</span>${escapeHtml([visit.device_vendor, visit.device_model].filter(Boolean).join(' ') || 'No expuesto')}</p>
-        <p><span>Plataforma</span>${escapeHtml(client.platform || 'No expuesto')}</p>
+        <p><span>Navegador</span>${escapeHtml(browserVersions || `${visit.browser_name || ''} ${visit.browser_version || ''}`)}</p>
+        <p><span>Marca / modelo</span>${escapeHtml([visit.device_vendor, detectedModel].filter(Boolean).join(' ') || 'No expuesto')}</p>
+        <p><span>Plataforma</span>${escapeHtml(detectedPlatform || client.platform || 'No expuesto')}</p>
         <p><span>Pantalla</span>${screen.width || '-'} x ${screen.height || '-'} @ ${screen.devicePixelRatio || 1}</p>
         <p><span>Idioma</span>${escapeHtml(client.language || visit.accept_language || '')}</p>
         <p><span>Zona horaria</span>${escapeHtml(client.timezone || '')}</p>
-        <p><span>CPU / memoria</span>${client.hardwareConcurrency || '-'} nucleos · ${client.deviceMemory || '-'} GB</p>
+        <p><span>CPU / memoria</span>${client.hardwareConcurrency || '-'} nucleos - ${client.deviceMemory || '-'} GB</p>
         <p><span>Conexion</span>${escapeHtml(connection.effectiveType || 'No expuesto')}</p>
         <p><span>Referer</span>${escapeHtml(visit.referer || 'Directo')}</p>
       </div>
