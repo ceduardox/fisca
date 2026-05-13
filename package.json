@@ -1,0 +1,24 @@
+{
+  "name": "ghost",
+  "version": "1.0.0",
+  "description": "Ghost tracking link panel with PostgreSQL",
+  "main": "server.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node server.js",
+    "check": "node --check server.js && node --check public/app.js && node --check public/track.js"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "connect-pg-simple": "^9.0.1",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "express-session": "^1.18.1",
+    "nanoid": "^3.3.8",
+    "pg": "^8.13.1",
+    "ua-parser-js": "^2.0.0"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
