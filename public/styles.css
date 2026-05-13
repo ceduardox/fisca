@@ -18,7 +18,7 @@
 body {
   margin: 0;
   min-height: 100vh;
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: 'Manrope', system-ui, sans-serif;
   background:
     radial-gradient(circle at 15% 20%, rgba(255, 255, 255, 0.09), transparent 26rem),
     radial-gradient(circle at 80% 10%, rgba(71, 240, 163, 0.13), transparent 22rem),
@@ -115,6 +115,7 @@ label {
   line-height: 0.96;
   margin: 14px 0 0;
   letter-spacing: 0;
+  font-family: 'Space Grotesk', 'Manrope', system-ui, sans-serif;
 }
 
 .auth-visual p {
@@ -147,6 +148,7 @@ label {
 .auth-card h2 {
   margin: 28px 0 8px;
   font-size: 38px;
+  font-family: 'Space Grotesk', 'Manrope', system-ui, sans-serif;
 }
 
 .auth-card form,
@@ -167,6 +169,14 @@ label {
   align-items: center;
 }
 
+.brand-row strong,
+.boot-page strong,
+.topbar h1,
+.panel h2,
+.wa-head p {
+  font-family: 'Space Grotesk', 'Manrope', system-ui, sans-serif;
+}
+
 .ghost-icon {
   width: 44px;
   height: 44px;
@@ -176,6 +186,8 @@ label {
   display: grid;
   place-items: center;
   font-weight: 900;
+  box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.2);
+  animation: ghostGlow 4.8s ease-in-out infinite;
 }
 
 .primary-btn,
@@ -187,11 +199,50 @@ label {
   min-height: 54px;
   padding: 0 22px;
   font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  transition: transform 160ms ease, border-color 160ms ease, background 160ms ease, box-shadow 160ms ease;
+}
+
+.primary-btn svg,
+.soft-btn svg,
+.nav-btn svg,
+.copy-btn svg,
+.visit summary svg,
+.link-item svg,
+.device-status svg {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 auto;
+}
+
+.primary-btn:hover,
+.soft-btn:hover,
+.copy-btn:hover,
+.nav-btn:hover {
+  transform: translateY(-1px);
 }
 
 .primary-btn {
   background: var(--accent);
   color: #07080b;
+  position: relative;
+  overflow: hidden;
+}
+
+.primary-btn::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(100deg, transparent, rgba(71, 240, 163, 0.22), transparent);
+  transform: translateX(-120%);
+  transition: transform 420ms ease;
+}
+
+.primary-btn:hover::after {
+  transform: translateX(120%);
 }
 
 .soft-btn,
@@ -199,6 +250,12 @@ label {
   background: #202431;
   color: var(--text);
   border: 1px solid var(--line);
+}
+
+.copy-btn.success {
+  border-color: rgba(71, 240, 163, 0.7);
+  background: rgba(71, 240, 163, 0.12);
+  color: var(--green);
 }
 
 .soft-btn:disabled {
@@ -306,6 +363,10 @@ label {
   color: var(--text);
 }
 
+.nav-btn.active {
+  box-shadow: inset 3px 0 0 var(--green), 0 0 28px rgba(71, 240, 163, 0.08);
+}
+
 .workspace {
   padding: 28px;
   display: grid;
@@ -411,6 +472,13 @@ label {
   color: var(--text);
   border: 1px solid var(--line);
   border-radius: 18px;
+}
+
+.link-item strong,
+.visit summary strong {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .link-item.active {
@@ -572,6 +640,14 @@ label {
   align-items: center;
   gap: 12px;
   background: linear-gradient(135deg, rgba(71, 240, 163, 0.08), rgba(255, 255, 255, 0.03));
+}
+
+.device-status svg {
+  color: var(--green);
+}
+
+.device-status.denied svg {
+  color: var(--danger);
 }
 
 .device-status span {
@@ -866,6 +942,18 @@ label {
   }
 }
 
+@keyframes ghostGlow {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.16), 0 0 18px rgba(71, 240, 163, 0.05);
+    transform: translateY(0);
+  }
+  50% {
+    box-shadow: 0 0 0 7px rgba(255, 255, 255, 0.02), 0 0 28px rgba(71, 240, 163, 0.16);
+    transform: translateY(-2px);
+  }
+}
+
 .toast {
   position: fixed;
   left: 50%;
@@ -1101,6 +1189,17 @@ label {
     margin-right: 18px;
     padding-left: 0;
     padding-right: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.001ms !important;
   }
 }
 

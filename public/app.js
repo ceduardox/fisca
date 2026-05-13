@@ -35,6 +35,7 @@ function renderBoot() {
       <span></span>
     </main>
   `;
+  hydrateIcons();
 }
 
 function renderLogin(loading = false) {
@@ -61,12 +62,13 @@ function renderLogin(loading = false) {
           <label>Contrasena
             <input name="password" type="password" autocomplete="current-password" placeholder="********" required>
           </label>
-          <button class="primary-btn" type="submit">${loading ? 'Cargando...' : 'Entrar'}</button>
+          <button class="primary-btn" type="submit"><i data-lucide="${loading ? 'loader-circle' : 'log-in'}"></i>${loading ? 'Cargando...' : 'Entrar'}</button>
         </form>
         <div id="loginError" class="error"></div>
       </section>
     </main>
   `;
+  hydrateIcons();
 
   document.getElementById('loginForm').addEventListener('submit', async (event) => {
     event.preventDefault();
@@ -127,7 +129,7 @@ function renderDashboard() {
             <p class="eyebrow">Base activa</p>
             <h1>${state.user.phoneE164 || 'Configura tu numero Ghost'}</h1>
           </div>
-          <button class="soft-btn" id="refreshBtn">Actualizar</button>
+          <button class="soft-btn" id="refreshBtn"><i data-lucide="refresh-cw"></i>Actualizar</button>
         </header>
 
         <section class="grid two">
@@ -160,7 +162,7 @@ function renderDashboard() {
               <label>Destino opcional
                 <input name="destinationUrl" type="url" placeholder="https://...">
               </label>
-              <button class="primary-btn" type="submit">Generar link</button>
+              <button class="primary-btn" type="submit"><i data-lucide="link"></i>Generar link</button>
             </form>
           </article>
 
@@ -211,7 +213,7 @@ function renderConversations() {
             <p class="eyebrow">WhatsApp asignado</p>
             <h1>${escapeHtml(state.user.phoneE164 || 'Sin numero asignado')}</h1>
           </div>
-          <button class="soft-btn" id="refreshBtn">Actualizar</button>
+          <button class="soft-btn" id="refreshBtn"><i data-lucide="refresh-cw"></i>Actualizar</button>
         </header>
 
         <section class="phone-preview">
@@ -261,9 +263,9 @@ function renderSidebar(activeView) {
         <em>${escapeHtml(state.user.phoneE164 || 'Sin WhatsApp asignado')}</em>
       </div>
       <nav>
-        <button class="nav-btn ${activeView === 'panel' ? 'active' : ''}" data-view="panel">Panel</button>
-        <button class="nav-btn ${activeView === 'conversations' ? 'active' : ''}" data-view="conversations">Conversaciones</button>
-        <button class="nav-btn" id="logoutBtn">Salir</button>
+        <button class="nav-btn ${activeView === 'panel' ? 'active' : ''}" data-view="panel"><i data-lucide="layout-dashboard"></i>Panel</button>
+        <button class="nav-btn ${activeView === 'conversations' ? 'active' : ''}" data-view="conversations"><i data-lucide="messages-square"></i>Conversaciones</button>
+        <button class="nav-btn" id="logoutBtn"><i data-lucide="log-out"></i>Salir</button>
       </nav>
     </aside>
   `;
@@ -307,12 +309,12 @@ function renderLinkItem(link) {
   return `
     <button class="link-item ${active}" data-link-id="${link.id}">
       <span>
-        <strong>${escapeHtml(link.title)}</strong>
+        <strong><i data-lucide="external-link"></i>${escapeHtml(link.title)}</strong>
         <small>${escapeHtml(link.share_url)}</small>
       </span>
       <em>${link.visit_count || 0}</em>
     </button>
-    <button class="copy-btn" data-copy="${escapeAttr(link.share_url)}">Copiar link</button>
+    <button class="copy-btn" data-copy="${escapeAttr(link.share_url)}"><i data-lucide="copy"></i>Copiar link</button>
   `;
 }
 
@@ -337,7 +339,7 @@ function renderUsersPanel() {
           <input name="isAdmin" type="checkbox">
           <span>Permitir que tambien cree usuarios</span>
         </label>
-        <button class="primary-btn" type="submit">Crear usuario</button>
+        <button class="primary-btn" type="submit"><i data-lucide="user-plus"></i>Crear usuario</button>
       </form>
       <div class="user-list">
         ${state.users.map(renderUserItem).join('')}
@@ -356,7 +358,7 @@ function renderUserItem(user) {
       <em>${user.isAdmin ? 'admin' : 'usuario'}</em>
       <form class="user-phone-form" data-phone-form="${user.id}">
         <input data-phone-user-id="${user.id}" type="tel" value="${escapeAttr(user.phoneNumber || '')}">
-        <button class="soft-btn" type="submit">Asignar WhatsApp</button>
+        <button class="soft-btn" type="submit"><i data-lucide="phone"></i>Asignar WhatsApp</button>
       </form>
     </div>
   `;
@@ -379,7 +381,7 @@ function renderVisit(visit) {
     <details class="visit">
       <summary>
         <span>
-          <strong>${escapeHtml(visit.os_name || 'Sistema desconocido')} ${escapeHtml(visit.os_version || '')}</strong>
+          <strong><i data-lucide="${visit.device_type === 'mobile' ? 'smartphone' : visit.device_type === 'tablet' ? 'tablet' : 'monitor'}"></i>${escapeHtml(visit.os_name || 'Sistema desconocido')} ${escapeHtml(visit.os_version || '')}</strong>
           <small>${formatDate(visit.created_at)} - ${escapeHtml(visit.ip || 'sin IP')}</small>
         </span>
         <b>${escapeHtml(visit.device_type || 'desktop')}</b>
@@ -420,9 +422,9 @@ function renderVisitPagination() {
   const totalPages = Math.ceil(state.visits.length / state.visitsPerPage);
   return `
     <div class="pager">
-      <button class="soft-btn" data-page-action="prev" ${state.visitPage <= 1 ? 'disabled' : ''}>Anterior</button>
+      <button class="soft-btn" data-page-action="prev" ${state.visitPage <= 1 ? 'disabled' : ''}><i data-lucide="chevron-left"></i>Anterior</button>
       <span>Pagina ${state.visitPage} de ${totalPages}</span>
-      <button class="soft-btn" data-page-action="next" ${state.visitPage >= totalPages ? 'disabled' : ''}>Siguiente</button>
+      <button class="soft-btn" data-page-action="next" ${state.visitPage >= totalPages ? 'disabled' : ''}>Siguiente<i data-lucide="chevron-right"></i></button>
     </div>
   `;
 }
@@ -438,14 +440,14 @@ function renderSpecialDeviceStatus(modelDisplay, createdAt) {
     return `
       <div class="device-status denied">
         <span></span>
-        <strong>Sin permiso concedido</strong>
+        <i data-lucide="shield-x"></i><strong>Sin permiso concedido</strong>
       </div>
     `;
   }
 
   return `
     <div class="device-status working">
-      <span></span>
+      <span></span><i data-lucide="activity"></i>
       <strong>Trabajando</strong>
     </div>
   `;
@@ -474,8 +476,14 @@ function bindDashboard() {
   document.querySelectorAll('.copy-btn').forEach((button) => {
     button.addEventListener('click', async () => {
       await navigator.clipboard.writeText(button.dataset.copy);
-      button.textContent = 'Copiado';
-      setTimeout(() => button.textContent = 'Copiar link', 1200);
+      button.classList.add('success');
+      button.innerHTML = '<i data-lucide="check"></i>Copiado';
+      hydrateIcons();
+      setTimeout(() => {
+        button.classList.remove('success');
+        button.innerHTML = '<i data-lucide="copy"></i>Copiar link';
+        hydrateIcons();
+      }, 1200);
     });
   });
 
@@ -518,6 +526,7 @@ function bindDashboard() {
   }
 
   setupAdminPhones();
+  hydrateIcons();
 }
 
 function setupAdminPhones() {
@@ -608,4 +617,14 @@ function escapeHtml(value) {
 
 function escapeAttr(value) {
   return escapeHtml(value).replace(/`/g, '&#96;');
+}
+
+function hydrateIcons() {
+  if (window.lucide) {
+    window.lucide.createIcons({
+      attrs: {
+        'stroke-width': 2.2
+      }
+    });
+  }
 }
