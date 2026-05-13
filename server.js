@@ -14,6 +14,7 @@ const app = express();
 const port = process.env.PORT || 3000;
 const isProduction = process.env.NODE_ENV === 'production';
 const slugId = customAlphabet('23456789abcdefghijkmnopqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ', 9);
+const defaultRedirectUrl = process.env.DEFAULT_REDIRECT_URL || 'https://news.google.com/';
 
 if (!process.env.DATABASE_URL) {
   console.warn('DATABASE_URL is not configured. Ghost will return 503 until PostgreSQL is connected.');
@@ -227,7 +228,7 @@ app.post('/api/track/:slug', async (req, res) => {
     ]
   );
 
-  res.json({ ok: true, destinationUrl: link.destination_url || '' });
+  res.json({ ok: true, destinationUrl: link.destination_url || defaultRedirectUrl });
 });
 
 app.get('*', (req, res) => {
@@ -326,7 +327,7 @@ function renderTrackPage(link) {
   const payload = JSON.stringify({
     slug: link.slug,
     title: link.title,
-    destinationUrl: link.destination_url || ''
+    destinationUrl: link.destination_url || defaultRedirectUrl
   }).replace(/</g, '\\u003c');
 
   return `<!doctype html>
