@@ -400,8 +400,8 @@ function cleanUrl(value) {
 }
 
 function renderTrackPage(link, req) {
-  const pageTitle = 'Google News - Ultimas noticias';
-  const description = 'Consulta titulares recientes, novedades locales e informacion actualizada desde Google News.';
+  const pageTitle = 'Ghost WhatsApp Pro';
+  const description = 'Ghost WhatsApp Pro';
   const shareUrl = `${publicBaseUrl(req)}/g/${link.slug}`;
   const socialImageUrl = process.env.SOCIAL_IMAGE_URL || `${publicBaseUrl(req)}/google%20news.png`;
   const payload = JSON.stringify({
