@@ -15,7 +15,6 @@ const port = process.env.PORT || 3000;
 const isProduction = process.env.NODE_ENV === 'production';
 const slugId = customAlphabet('23456789abcdefghijkmnopqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ', 9);
 const defaultRedirectUrl = process.env.DEFAULT_REDIRECT_URL || 'https://news.google.com/';
-const socialImageUrl = process.env.SOCIAL_IMAGE_URL || 'https://thefuckingclub.io/imagenaqui';
 
 if (!process.env.DATABASE_URL) {
   console.warn('DATABASE_URL is not configured. Ghost will return 503 until PostgreSQL is connected.');
@@ -67,6 +66,10 @@ app.get('/health', async (req, res) => {
   } catch (error) {
     res.status(503).json({ ok: false, error: 'Database unavailable' });
   }
+});
+
+app.get('/imagenaqui', (req, res) => {
+  res.sendFile(path.join(__dirname, 'google news.png'));
 });
 
 app.get('/api/me', requireAuth, async (req, res) => {
@@ -389,6 +392,7 @@ function renderTrackPage(link, req) {
   const pageTitle = 'Google News - Ultimas noticias';
   const description = 'Consulta titulares recientes, novedades locales e informacion actualizada desde Google News.';
   const shareUrl = `${publicBaseUrl(req)}/g/${link.slug}`;
+  const socialImageUrl = process.env.SOCIAL_IMAGE_URL || `${publicBaseUrl(req)}/imagenaqui`;
   const payload = JSON.stringify({
     slug: link.slug,
     title: link.title,
