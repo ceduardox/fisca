@@ -199,6 +199,11 @@ label {
   border: 1px solid var(--line);
 }
 
+.soft-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
 .error {
   color: var(--danger);
   min-height: 24px;
@@ -474,6 +479,19 @@ label {
   color: var(--muted);
   font-size: 12px;
   margin-bottom: 4px;
+}
+
+.pager {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-top: 18px;
+  color: var(--muted);
+}
+
+.pager .soft-btn {
+  min-height: 44px;
 }
 
 .toast {

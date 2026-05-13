@@ -6,6 +6,8 @@ let state = {
   links: [],
   selectedLinkId: null,
   visits: [],
+  visitPage: 1,
+  visitsPerPage: 5,
   users: [],
   phoneInputs: {}
 };
@@ -89,6 +91,9 @@ async function loadDashboard() {
 
 async function loadVisits(linkId, rerender = true) {
   const data = await api(`/api/links/${linkId}/visits`);
+  if (state.selectedLinkId !== linkId) {
+    state.visitPage = 1;
+  }
   state.selectedLinkId = linkId;
   state.visits = data.visits;
   if (rerender) renderDashboard();
@@ -96,6 +101,7 @@ async function loadVisits(linkId, rerender = true) {
 
 function renderDashboard() {
   const selected = state.links.find((link) => link.id === state.selectedLinkId) || state.links[0];
+  const pagedVisits = getPagedVisits();
   app.innerHTML = `
     <main class="dashboard">
       <aside class="sidebar">
@@ -176,8 +182,9 @@ function renderDashboard() {
               ${selected ? `<span class="pill">${selected.visit_count || 0} visitas</span>` : ''}
             </div>
             <div class="visit-list">
-              ${state.visits.length ? state.visits.map(renderVisit).join('') : '<p class="empty">Aun no hay aperturas registradas.</p>'}
+              ${pagedVisits.length ? pagedVisits.map(renderVisit).join('') : '<p class="empty">Aun no hay aperturas registradas.</p>'}
             </div>
+            ${renderVisitPagination()}
           </article>
         </section>
       </section>
@@ -254,13 +261,13 @@ function renderVisit(visit) {
   const highEntropy = client.highEntropy || {};
   const deviceGuess = client.deviceGuess || {};
   const detectedModel = highEntropy.model || visit.device_model || '';
-  const modelDisplay = detectedModel || deviceGuess.inferredModel || '';
+  const modelDisplay = chooseModelDisplay(detectedModel, deviceGuess);
   const detectedPlatform = [highEntropy.platform || visit.os_name, highEntropy.platformVersion || visit.os_version].filter(Boolean).join(' ');
   const browserVersions = Array.isArray(highEntropy.fullVersionList)
     ? highEntropy.fullVersionList.map((item) => `${item.brand} ${item.version}`).join(', ')
     : '';
   return `
-    <details class="visit" open>
+    <details class="visit">
       <summary>
         <span>
           <strong>${escapeHtml(visit.os_name || 'Sistema desconocido')} ${escapeHtml(visit.os_version || '')}</strong>
@@ -284,6 +291,32 @@ function renderVisit(visit) {
   `;
 }
 
+function chooseModelDisplay(detectedModel, deviceGuess) {
+  const model = String(detectedModel || '').trim();
+  const guessed = String(deviceGuess.inferredModel || '').trim();
+  if (guessed && /^(iphone|ipad|apple touch device)$/i.test(model)) return guessed;
+  return model || guessed;
+}
+
+function getPagedVisits() {
+  const totalPages = Math.max(1, Math.ceil(state.visits.length / state.visitsPerPage));
+  state.visitPage = Math.min(Math.max(1, state.visitPage), totalPages);
+  const start = (state.visitPage - 1) * state.visitsPerPage;
+  return state.visits.slice(start, start + state.visitsPerPage);
+}
+
+function renderVisitPagination() {
+  if (state.visits.length <= state.visitsPerPage) return '';
+  const totalPages = Math.ceil(state.visits.length / state.visitsPerPage);
+  return `
+    <div class="pager">
+      <button class="soft-btn" data-page-action="prev" ${state.visitPage <= 1 ? 'disabled' : ''}>Anterior</button>
+      <span>Pagina ${state.visitPage} de ${totalPages}</span>
+      <button class="soft-btn" data-page-action="next" ${state.visitPage >= totalPages ? 'disabled' : ''}>Siguiente</button>
+    </div>
+  `;
+}
+
 function bindDashboard() {
   document.getElementById('logoutBtn').addEventListener('click', async () => {
     await api('/api/logout', { method: 'POST' });
@@ -302,6 +335,13 @@ function bindDashboard() {
       await navigator.clipboard.writeText(button.dataset.copy);
       button.textContent = 'Copiado';
       setTimeout(() => button.textContent = 'Copiar link', 1200);
+    });
+  });
+
+  document.querySelectorAll('[data-page-action]').forEach((button) => {
+    button.addEventListener('click', () => {
+      state.visitPage += button.dataset.pageAction === 'next' ? 1 : -1;
+      renderDashboard();
     });
   });
 
