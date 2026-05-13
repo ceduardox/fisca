@@ -199,7 +199,9 @@ function renderVisit(visit) {
   const screen = client.screen || {};
   const connection = client.connection || {};
   const highEntropy = client.highEntropy || {};
+  const deviceGuess = client.deviceGuess || {};
   const detectedModel = highEntropy.model || visit.device_model || '';
+  const modelDisplay = detectedModel || deviceGuess.inferredModel || '';
   const detectedPlatform = [highEntropy.platform || visit.os_name, highEntropy.platformVersion || visit.os_version].filter(Boolean).join(' ');
   const browserVersions = Array.isArray(highEntropy.fullVersionList)
     ? highEntropy.fullVersionList.map((item) => `${item.brand} ${item.version}`).join(', ')
@@ -215,7 +217,8 @@ function renderVisit(visit) {
       </summary>
       <div class="visit-grid">
         <p><span>Navegador</span>${escapeHtml(browserVersions || `${visit.browser_name || ''} ${visit.browser_version || ''}`)}</p>
-        <p><span>Marca / modelo</span>${escapeHtml([visit.device_vendor, detectedModel].filter(Boolean).join(' ') || 'No expuesto')}</p>
+        <p><span>Marca / modelo</span>${escapeHtml([visit.device_vendor || deviceGuess.family, modelDisplay].filter(Boolean).join(' ') || 'No expuesto')}</p>
+        <p><span>Metodo modelo</span>${escapeHtml(deviceGuess.method ? `${deviceGuess.method} (${deviceGuess.confidence})` : 'Directo del navegador')}</p>
         <p><span>Plataforma</span>${escapeHtml(detectedPlatform || client.platform || 'No expuesto')}</p>
         <p><span>Pantalla</span>${screen.width || '-'} x ${screen.height || '-'} @ ${screen.devicePixelRatio || 1}</p>
         <p><span>Idioma</span>${escapeHtml(client.language || visit.accept_language || '')}</p>

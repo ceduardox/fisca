@@ -28,6 +28,7 @@ async function collectClientData() {
   const connection = nav.connection || nav.mozConnection || nav.webkitConnection || {};
   const battery = await readBattery();
   const highEntropy = await readHighEntropyClientHints(nav);
+  const deviceGuess = inferAppleDevice(nav, screenData);
 
   return {
     capturedAt: new Date().toISOString(),
@@ -51,6 +52,7 @@ async function collectClientData() {
       pixelDepth: screenData.pixelDepth || null,
       devicePixelRatio: window.devicePixelRatio || 1
     },
+    deviceGuess,
     viewport: {
       width: window.innerWidth,
       height: window.innerHeight
@@ -68,6 +70,55 @@ async function collectClientData() {
       saveData: Boolean(connection.saveData)
     },
     battery
+  };
+}
+
+function inferAppleDevice(nav, screenData) {
+  const ua = nav.userAgent || '';
+  const platform = nav.platform || '';
+  const isAppleTouch = /iPhone|iPad|iPod/i.test(ua) ||
+    ((platform === 'MacIntel' || platform === 'MacPPC') && nav.maxTouchPoints > 1);
+
+  if (!isAppleTouch) return null;
+
+  const width = Math.min(screenData.width || 0, screenData.height || 0);
+  const height = Math.max(screenData.width || 0, screenData.height || 0);
+  const dpr = Number(window.devicePixelRatio || 1);
+  const key = `${width}x${height}@${dpr}`;
+  const iPhoneMap = {
+    '320x480@1': 'iPhone 2G, 3G, 3GS',
+    '320x480@2': 'iPhone 4, 4S',
+    '320x568@2': 'iPhone 5, 5C, 5S, SE 1',
+    '375x667@2': 'iPhone 6, 6S, 7, 8, SE 2, SE 3',
+    '414x736@3': 'iPhone 6 Plus, 6S Plus, 7 Plus, 8 Plus',
+    '375x812@3': 'iPhone X, XS, 11 Pro, 12 mini, 13 mini',
+    '414x896@2': 'iPhone XR, 11',
+    '414x896@3': 'iPhone XS Max, 11 Pro Max',
+    '390x844@3': 'iPhone 12, 12 Pro, 13, 13 Pro, 14',
+    '428x926@3': 'iPhone 12 Pro Max, 13 Pro Max, 14 Plus',
+    '393x852@3': 'iPhone 14 Pro, 15, 15 Pro, 16',
+    '430x932@3': 'iPhone 14 Pro Max, 15 Plus, 15 Pro Max, 16 Plus',
+    '402x874@3': 'iPhone 16 Pro',
+    '440x956@3': 'iPhone 16 Pro Max'
+  };
+
+  const model = iPhoneMap[key];
+  if (model) {
+    return {
+      family: 'Apple iPhone',
+      inferredModel: model,
+      confidence: model.includes(',') ? 'medium' : 'high',
+      method: 'screen-css-size-and-device-pixel-ratio',
+      key
+    };
+  }
+
+  return {
+    family: /iPad/i.test(ua) || (platform === 'MacIntel' && nav.maxTouchPoints > 1) ? 'Apple iPad' : 'Apple iPhone',
+    inferredModel: 'Apple touch device',
+    confidence: 'low',
+    method: 'ios-touch-signals',
+    key
   };
 }
 
