@@ -7,7 +7,7 @@ let state = {
   selectedLinkId: null,
   visits: [],
   users: [],
-  phoneInput: null
+  phoneInputs: {}
 };
 
 init();
@@ -121,16 +121,16 @@ function renderDashboard() {
           <article class="panel">
             <div class="panel-head">
               <div>
-                <p class="eyebrow">Telefono base</p>
+                <p class="eyebrow">WhatsApp asignado</p>
                 <h2>Numero principal</h2>
               </div>
               <span class="pill">${state.user.phoneCountry || 'sin pais'}</span>
             </div>
-            <form id="phoneForm" class="phone-form">
-              <input id="phoneInput" type="tel" value="${escapeAttr(state.user.phoneNumber)}">
-              <button class="primary-btn" type="submit">Guardar numero</button>
-            </form>
-            <p class="hint">Solo se guarda un numero base por usuario. Puedes reemplazarlo cuando quieras.</p>
+            <div class="readonly-phone">
+              <strong>${escapeHtml(state.user.phoneE164 || 'Sin numero asignado')}</strong>
+              <span>El administrador gestiona este numero.</span>
+            </div>
+            <p class="hint">Este numero es el WhatsApp base asignado a tu usuario.</p>
           </article>
 
           <article class="panel">
@@ -239,6 +239,10 @@ function renderUserItem(user) {
         <small>${escapeHtml(user.phoneE164 || 'Sin numero base')}</small>
       </span>
       <em>${user.isAdmin ? 'admin' : 'usuario'}</em>
+      <form class="user-phone-form" data-phone-form="${user.id}">
+        <input data-phone-user-id="${user.id}" type="tel" value="${escapeAttr(user.phoneNumber || '')}">
+        <button class="soft-btn" type="submit">Asignar WhatsApp</button>
+      </form>
     </div>
   `;
 }
@@ -283,7 +287,7 @@ function renderVisit(visit) {
 function bindDashboard() {
   document.getElementById('logoutBtn').addEventListener('click', async () => {
     await api('/api/logout', { method: 'POST' });
-    state = { user: null, baseUrl: '', links: [], selectedLinkId: null, visits: [], phoneInput: null };
+    state = { user: null, baseUrl: '', links: [], selectedLinkId: null, visits: [], users: [], phoneInputs: {} };
     renderLogin();
   });
 
@@ -332,38 +336,47 @@ function bindDashboard() {
     });
   }
 
-  setupPhone();
+  setupAdminPhones();
 }
 
-function setupPhone() {
-  const input = document.getElementById('phoneInput');
-  const iti = window.intlTelInput(input, {
-    initialCountry: state.user.phoneCountry || 'bo',
-    separateDialCode: true,
-    nationalMode: false,
-    utilsScript: 'https://cdn.jsdelivr.net/npm/intl-tel-input@23.8.1/build/js/utils.js'
+function setupAdminPhones() {
+  document.querySelectorAll('[data-phone-user-id]').forEach((input) => {
+    const userId = Number(input.dataset.phoneUserId);
+    const user = state.users.find((item) => item.id === userId);
+    const iti = window.intlTelInput(input, {
+      initialCountry: user?.phoneCountry || 'bo',
+      separateDialCode: true,
+      nationalMode: false,
+      utilsScript: 'https://cdn.jsdelivr.net/npm/intl-tel-input@23.8.1/build/js/utils.js'
+    });
+    state.phoneInputs[userId] = iti;
   });
 
-  document.getElementById('phoneForm').addEventListener('submit', async (event) => {
-    event.preventDefault();
-    const country = iti.getSelectedCountryData();
-    const e164 = iti.getNumber();
-    if (!iti.isValidNumber()) {
-      showToast('Numero invalido para el pais seleccionado.');
-      return;
-    }
-
-    const result = await api('/api/phone', {
-      method: 'PUT',
-      body: {
-        country: country.iso2,
-        dialCode: `+${country.dialCode}`,
-        phoneNumber: input.value,
-        e164
+  document.querySelectorAll('[data-phone-form]').forEach((formEl) => {
+    formEl.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const userId = Number(formEl.dataset.phoneForm);
+      const input = formEl.querySelector('[data-phone-user-id]');
+      const iti = state.phoneInputs[userId];
+      const country = iti.getSelectedCountryData();
+      const e164 = iti.getNumber();
+      if (!iti.isValidNumber()) {
+        showToast('Numero invalido para el pais seleccionado.');
+        return;
       }
+
+      await api(`/api/users/${userId}/phone`, {
+        method: 'PUT',
+        body: {
+          country: country.iso2,
+          dialCode: `+${country.dialCode}`,
+          phoneNumber: input.value,
+          e164
+        }
+      });
+      showToast('Numero asignado.');
+      await loadDashboard();
     });
-    state.user = result.user;
-    renderDashboard();
   });
 }
 

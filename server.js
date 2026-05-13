@@ -83,7 +83,7 @@ app.get('/api/me', requireAuth, async (req, res) => {
 
 app.get('/api/users', requireAuth, requireAdmin, async (req, res) => {
   const result = await pool.query(
-    `SELECT id, username, is_admin, phone_e164, created_at
+    `SELECT id, username, is_admin, phone_country, phone_dial_code, phone_number, phone_e164, created_at
      FROM users
      ORDER BY created_at DESC`
   );
@@ -109,7 +109,7 @@ app.post('/api/users', requireAuth, requireAdmin, async (req, res) => {
     const result = await pool.query(
       `INSERT INTO users (username, password_hash, is_admin)
        VALUES ($1, $2, $3)
-       RETURNING id, username, is_admin, phone_e164, created_at`,
+       RETURNING id, username, is_admin, phone_country, phone_dial_code, phone_number, phone_e164, created_at`,
       [username, hash, isAdmin]
     );
     res.status(201).json({ user: publicUserRow(result.rows[0]) });
@@ -145,7 +145,8 @@ app.post('/api/logout', requireAuth, (req, res) => {
   });
 });
 
-app.put('/api/phone', requireAuth, async (req, res) => {
+app.put('/api/users/:id/phone', requireAuth, requireAdmin, async (req, res) => {
+  const userId = Number(req.params.id);
   const country = cleanText(req.body.country, 12);
   const dialCode = cleanText(req.body.dialCode, 8);
   const phoneNumber = cleanText(req.body.phoneNumber, 32);
@@ -160,9 +161,12 @@ app.put('/api/phone', requireAuth, async (req, res) => {
      SET phone_country = $1, phone_dial_code = $2, phone_number = $3, phone_e164 = $4, updated_at = NOW()
      WHERE id = $5
      RETURNING *`,
-    [country, dialCode, phoneNumber, e164, req.session.userId]
+    [country, dialCode, phoneNumber, e164, userId]
   );
-  res.json({ user: publicUser(result.rows[0]) });
+  if (!result.rows[0]) {
+    return res.status(404).json({ error: 'Usuario no encontrado.' });
+  }
+  res.json({ user: publicUserRow(result.rows[0]) });
 });
 
 app.get('/api/links', requireAuth, async (req, res) => {
@@ -359,6 +363,9 @@ function publicUserRow(user) {
     id: user.id,
     username: user.username,
     isAdmin: Boolean(user.is_admin),
+    phoneCountry: user.phone_country || '',
+    phoneDialCode: user.phone_dial_code || '',
+    phoneNumber: user.phone_number || '',
     phoneE164: user.phone_e164 || '',
     createdAt: user.created_at
   };

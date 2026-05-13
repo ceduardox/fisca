@@ -375,14 +375,41 @@ label {
 }
 
 .user-item {
-  display: flex;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: 1fr auto;
   gap: 12px;
   align-items: center;
   border: 1px solid var(--line);
   border-radius: 16px;
   background: #0d1017;
   padding: 13px 14px;
+}
+
+.user-phone-form {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px;
+  align-items: center;
+}
+
+.readonly-phone {
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: #0d1017;
+  padding: 18px;
+}
+
+.readonly-phone strong {
+  display: block;
+  font-size: 24px;
+  overflow-wrap: anywhere;
+}
+
+.readonly-phone span {
+  display: block;
+  margin-top: 6px;
+  color: var(--muted);
 }
 
 .user-item small {
@@ -543,6 +570,7 @@ label {
 
   .topbar,
   .phone-form,
+  .user-phone-form,
   .panel-head,
   .visit summary {
     display: grid;
